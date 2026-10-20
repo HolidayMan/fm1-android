@@ -27,3 +27,6 @@ local.properties
 *.pcm
 *.log
 .signing-password
+
+# Pinned local Kotlin compiler/download cache
+.tools/

@@ -19,3 +19,6 @@ pinned public upstream inputs and retains their original licenses.
 The illustrated application icon is an existing generated original asset,
 resized for Android. See docs/provenance.md. No manufacturer photograph is
 packaged as the icon.
+
+Kotlin standard library 2.0.21: JetBrains and contributors, Apache-2.0.
+See licenses/LICENSE-kotlin-stdlib and licenses/NOTICE-kotlin-stdlib.

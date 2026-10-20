@@ -1,6 +1,6 @@
 # Source and asset provenance
 
-The Android Java/Canvas host and JNI glue are project-owned code. Shared Rust
+The Android Kotlin/Canvas host and JNI glue are project-owned code. Shared Rust
 C-ABI adapters and GPL source-native tooling were extracted from the private
 FM-1 iOS development tree without its Git history, Swift frontend, device data,
 credentials, logs or firmware-derived generated sources.

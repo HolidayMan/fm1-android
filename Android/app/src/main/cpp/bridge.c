@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "engine_api.h"
-#define JNI(name) Java_ai_fstack_fm1_NativeEngine_##name
+#define JNI(name) Java_org_fm1_android_NativeEngine_##name
 #define H ((void*)(uintptr_t)handle)
 static void fail(JNIEnv* e,const char* message){jclass c=(*e)->FindClass(e,"java/lang/IllegalStateException");(*e)->ThrowNew(e,c,message);}
 JNIEXPORT jlong JNICALL JNI(create)(JNIEnv* e,jclass c,jbyteArray data,jint required){

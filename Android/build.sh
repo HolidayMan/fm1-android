@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
+source "$ROOT/scripts/kotlin-toolchain.sh"
 SDK="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 NDK="${ANDROID_NDK_HOME:-$SDK/ndk/27.2.12479018}"
 TOOLS="$SDK/build-tools/35.0.0"
@@ -36,16 +37,16 @@ for item in json.loads((root/'Core/native/packages.lock.json').read_text())['pac
   raise SystemExit('Exact firmware package check failed: '+item['id'])
  shutil.copy2(path,root/f"Android/build/assets/engines/{item['kind']}.fwsc")
 notices=root/'Android/build/assets/notices';notices.mkdir(exist_ok=True)
-for p in (root/'licenses').glob('*native-*'):
+for p in (root/'licenses').glob('*'):
  if p.is_file():shutil.copy2(p,notices/p.name)
 shutil.copy2(root/'LICENSE',notices/'LICENSE');shutil.copy2(root/'NOTICE',notices/'NOTICE')
 PY
 "$TOOLS/aapt2" compile --dir "$ROOT/Android/app/src/main/res" -o "$OUT/resources.zip"
-"$TOOLS/aapt2" link "$OUT/resources.zip" -I "$SDK/platforms/android-35/android.jar" --manifest "$ROOT/Android/app/src/main/AndroidManifest.xml" --min-sdk-version 26 --target-sdk-version 35 --version-code 1 --version-name 0.1.0 -A "$OUT/assets" -o "$OUT/base.apk"
-find "$ROOT/Android/app/src/main/java" -name '*.java' > "$OUT/sources.txt"
-javac -source 8 -target 8 -Xlint:-options -cp "$SDK/platforms/android-35/android.jar" -d "$OUT/classes" @"$OUT/sources.txt"
+"$TOOLS/aapt2" link "$OUT/resources.zip" -I "$SDK/platforms/android-35/android.jar" --manifest "$ROOT/Android/app/src/main/AndroidManifest.xml" --min-sdk-version 26 --target-sdk-version 35 --version-code 2 --version-name 0.2.0 -A "$OUT/assets" -o "$OUT/base.apk"
+find "$ROOT/Android/app/src/main/kotlin" -name '*.kt' > "$OUT/sources.txt"
+"$KOTLIN_HOME/bin/kotlinc" -jvm-target 1.8 -no-reflect -module-name fm1main -cp "$SDK/platforms/android-35/android.jar" -d "$OUT/classes" @"$OUT/sources.txt"
 find "$OUT/classes" -name '*.class' > "$OUT/classes.txt"
-"$TOOLS/d8" --min-api 26 --lib "$SDK/platforms/android-35/android.jar" --output "$OUT/dex" @"$OUT/classes.txt"
+"$TOOLS/d8" --min-api 26 --lib "$SDK/platforms/android-35/android.jar" --output "$OUT/dex" @"$OUT/classes.txt" "$KOTLIN_HOME/lib/kotlin-stdlib.jar"
 cp "$OUT/base.apk" "$OUT/unsigned.apk"
 (cd "$OUT/dex" && zip -q "$OUT/unsigned.apk" classes.dex)
 (cd "$OUT" && zip -q -r unsigned.apk lib)

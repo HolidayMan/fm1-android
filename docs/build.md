@@ -5,8 +5,9 @@
 Validated on Apple Silicon macOS with Java 19, Python 3.12+, Rust, host LLVM 20,
 Android SDK platform 35/build-tools 35.0.0 and NDK 27.2.12479018. A Java 17+
 toolchain is required by current Android build tools. Runtime uses only platform
-Java APIs, the Rust standard library, and the pinned native sources; no Gradle,
-Maven or Cargo package download is required.
+Kotlin/JVM APIs, the Rust standard library, and the pinned native sources.
+Kotlin standard library is the only additional runtime; no Gradle/Maven library
+or Cargo package download is required.
 
 Install the SDK command-line tools normally, then use the installed sdkmanager:
 
@@ -24,6 +25,20 @@ Set FM1_NATIVE_LLVM_BIN to a matching clang and llvm-link from LLVM 20. Multi-un
 firmware is combined before per-instance state rewriting, so the linker and IR
 compiler must match. The NDK clang handles other translation units. Exact source
 and resource fingerprints are checked before native compilation.
+
+## Kotlin compiler
+
+`scripts/kotlin-toolchain.sh` pins the official Kotlin 2.0.21 compiler ZIP to
+SHA256 `0352c0a45bd22f80f6b26e485cd04da8047baa5de54865281fb9f89a4a7bcf2a`.
+The build downloads it explicitly on first invocation into ignored `.tools/`,
+validates the archive before using it, and compiles JVM 1.8 bytecode. D8 includes
+only the bundled Kotlin standard library in the consumer APK; the test APK uses
+the target app's runtime. Kotlin reflection and coroutines are not dependencies.
+
+The compiler line matches the D8 bundled in SDK build-tools 35.0.0. Kotlin 2.0
+requires D8/R8 8.5.10 or newer; the validated SDK tool reports 8.6.2-dev.
+See [Android's compatibility table](https://developer.android.com/build/kotlin-support)
+and the [official compiler release](https://github.com/JetBrains/kotlin/releases/tag/v2.0.21).
 
 ## Prepare sources and assets
 
@@ -98,7 +113,8 @@ containing unrelated owner work.
 ./Android/test.sh
 ```
 
-The app must already be built/installed. Default tests need only the exact
+The app must already be built/installed. The script wakes the dedicated emulator
+and dismisses its keyguard before injecting real touch events. Default tests need only the exact
 engine package assets already in the app and exercise ten core/UI cases. The
 receipt explicitly records that external exchange fixtures were not supplied.
 Optional cross-platform testing uses a caller-provided directory containing
