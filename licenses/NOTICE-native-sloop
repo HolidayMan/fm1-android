@@ -1,0 +1,42 @@
+Native SLOOP 2.7.1 backend (local prototype)
+
+SLOOP / Felucca firmware: GPL-3.0-only. Copyright 2026 Leo Kuroshita
+(@kurogedelic), Hugelton Instruments; SLOOP by isod89 and contributors.
+Exact source: https://github.com/isod89/sloop-fm1
+Tag v2.7.1, commit 4ec1ac829fd2bdf2c571ea215fb3d62477d01220.
+
+Native firmware wrapper and per-instance LLVM state tooling derived from
+Virtual FM-1, GPL-3.0: https://github.com/jbschooley/Virtual-FM-1
+Commit c52668953231655046ee142d2b3ab4fd2c8ca0b4.
+Adapted here for full physical flash, user samples, physical controls,
+MASTER ADC, and the existing serial instrument ABI.
+
+SLOOP includes the msfa FM6 core under Apache-2.0; physical modeling code
+credits DaisySP/Rings under MIT; font Terminus under SIL OFL 1.1;
+built-in samples under CC0. The source distribution's LICENSING.md and
+LICENSES retain the precise component attribution and asset permissions.
+The icon atlas retains its upstream section 7 permission terms.
+
+See bundled LICENSE-native-sloop for GPL-3.0. The combined native-backend
+build must not be described as MIT-only. The Android host retains this combined GPL attribution.
+
+Additional exact source-native community engines
+
+Felucca 1.6.1, GPL-3.0-only, Leo Kuroshita / Hugelton Instruments.
+https://github.com/hugelton/Felucca commit a53ecf428c29c780108fd70a31b71a32a6b5c313
+The MIT Felucca-Engines submodule retains its own license.
+
+X0X 1.1.0, GPL-3.0-only, Charles Vestal, after Felucca.
+https://github.com/charlesvestal/fm1-x0x commit 27f6fac7e07ce97b5de158b45aec99f59a9e23fd
+Whole upstream application, sequencer and real sound-engine source are compiled;
+its hardware platform is adapted to the serial native worker, physical flash and panel.
+
+Melodee 1.4.3, GPL-3.0-only, Kerem Kilic / Ellic Studio, after Felucca.
+https://github.com/keremimo/melodee commit ba9c812a603607012d68544b1acb6ccc8033eec5
+The included Casio CZ-1 and Sequential Prophet factory programs retain their
+respective owners' rights; upstream does not grant a redistribution license.
+External engine source and generated resources remain in the ignored local cache.
+
+Felucca/Melodee source wrappers retain Virtual FM-1 attribution and GPL-3.0.
+Complete upstream licensing notices are retained in Core/native/licenses/.
+Per-release generated header hashes and exact source pins: family.lock.json.

@@ -1,0 +1,21 @@
+FM-1 for Android — unofficial synthesizer application
+
+Project-owned application, native adapters and build glue are GPL-3.0-only,
+except components retaining their own licenses. See LICENSE. No affiliation
+or endorsement by M-VAVE is implied.
+
+fm1-emu: Copyright (c) 2026 Joakim Eriksson, MIT.
+See Vendor/LICENSE-fm1-emu and Vendor/UPSTREAM.md. The three vendored Rust
+crates retain explicit MIT package metadata and original attribution.
+
+Native SLOOP wrapper and state tooling derive from Virtual FM-1, GPL-3.0.
+Pinned firmware sources retain their individual licenses and component terms.
+See licenses/NOTICE-native-sloop, other licenses/* notices,
+Core/native/licenses/ and Core/native/*.lock.json.
+External firmware source, packages, generated firmware assets and factory sound
+banks are not included in the source repository. Developer preparation fetches
+pinned public upstream inputs and retains their original licenses.
+
+The illustrated application icon is an existing generated original asset,
+resized for Android. See docs/provenance.md. No manufacturer photograph is
+packaged as the icon.
