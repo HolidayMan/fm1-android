@@ -20,10 +20,10 @@ rm -rf "$OUT/classes" "$OUT/dex"
 mkdir -p "$OUT/classes" "$OUT/assets/engines" "$OUT/lib/arm64-v8a" "$OUT/dex"
 if [[ "${1:-}" == "--core" ]]; then
  export ANDROID_NDK_HOME="$NDK"
- export FM1_NATIVE_SLOOP="$ROOT/Research/NativeSloop/upstream-sloop-2.7.1"
- export FM1_NATIVE_FAMILY="$ROOT/Research/NativeFamily"
- export FM1_NATIVE_OFFICIAL_PREVIEW="$ROOT/Research/NativeOfficial/upstream-fm1-open"
- export FM1_NATIVE_SKIFF="$ROOT/Research/NativeSkiff/upstream-skiff"
+ export FM1_NATIVE_SLOOP="$ROOT/Research/NativeSloop28/upstream-sloop-2.8"
+ export FM1_NATIVE_FAMILY="$ROOT/Research/NativeFamilyOct22"
+ export FM1_NATIVE_OFFICIAL_PREVIEW="$ROOT/Research/NativeOfficial14/upstream-fm1-open"
+ export FM1_NATIVE_SKIFF="$ROOT/Research/NativeSkiff14/upstream-skiff"
  export FM1_NATIVE_EXPANSION="$ROOT/Research/NativeExpansion"
  cargo build -p fm1-ios-core --release --target aarch64-linux-android
 fi
@@ -36,13 +36,17 @@ for item in json.loads((root/'Core/native/packages.lock.json').read_text())['pac
  if len(data)!=item['size'] or hashlib.sha256(data).hexdigest()!=item['sha256']:
   raise SystemExit('Exact firmware package check failed: '+item['id'])
  shutil.copy2(path,root/f"Android/build/assets/engines/{item['kind']}.fwsc")
-notices=root/'Android/build/assets/notices';notices.mkdir(exist_ok=True)
+notices=root/'Android/build/assets/notices'
+if notices.exists():shutil.rmtree(notices)
+notices.mkdir()
 for p in (root/'licenses').glob('*'):
  if p.is_file():shutil.copy2(p,notices/p.name)
+for p in (root/'Core/native/licenses').rglob('*'):
+ if p.is_file():shutil.copy2(p,notices/('native-'+'__'.join(p.relative_to(root/'Core/native/licenses').parts)))
 shutil.copy2(root/'LICENSE',notices/'LICENSE');shutil.copy2(root/'NOTICE',notices/'NOTICE')
 PY
 "$TOOLS/aapt2" compile --dir "$ROOT/Android/app/src/main/res" -o "$OUT/resources.zip"
-"$TOOLS/aapt2" link "$OUT/resources.zip" -I "$SDK/platforms/android-35/android.jar" --manifest "$ROOT/Android/app/src/main/AndroidManifest.xml" --min-sdk-version 26 --target-sdk-version 35 --version-code 2 --version-name 0.2.0 -A "$OUT/assets" -o "$OUT/base.apk"
+"$TOOLS/aapt2" link "$OUT/resources.zip" -I "$SDK/platforms/android-35/android.jar" --manifest "$ROOT/Android/app/src/main/AndroidManifest.xml" --min-sdk-version 26 --target-sdk-version 35 --version-code 3 --version-name 0.3.0 -A "$OUT/assets" -o "$OUT/base.apk"
 find "$ROOT/Android/app/src/main/kotlin" -name '*.kt' > "$OUT/sources.txt"
 "$KOTLIN_HOME/bin/kotlinc" -jvm-target 1.8 -no-reflect -module-name fm1main -cp "$SDK/platforms/android-35/android.jar" -d "$OUT/classes" @"$OUT/sources.txt"
 find "$OUT/classes" -name '*.class' > "$OUT/classes.txt"

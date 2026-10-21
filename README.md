@@ -9,12 +9,12 @@ No account, telemetry or network permission is required by the app.
 
 | Instrument | Exact release | Native kind |
 | --- | --- | --- |
-| SLOOP | 2.7.1 | 2 |
+| SLOOP | 2.8 | 2 |
 | Felucca | 1.6.1 | 3 |
 | X0X | 1.1.0 | 4 |
-| Melodee | 1.4.3 | 5 |
-| FM1 Open portable preview | V13 | 6 |
-| Skiff | 1.3.2 | 7 |
+| Melodee | 1.4.5 | 5 |
+| FM1 Open portable preview | V14 | 6 |
+| Skiff | 1.4 | 7 |
 | FoMni | 0.4 | 8 |
 | Jangada | 1.0.1 | 9 |
 
@@ -41,7 +41,21 @@ it does not automatically adopt that app's private data or remove it. To move
 SLOOP work, export project copies or complete workspace backups from the earlier
 app, then import them with Projects and files in this app. Other instruments'
 private autosaves are not automatically transferred. The project/backup schema
-and exact firmware identities are unchanged.
+is unchanged. SLOOP 2.7.1 project and backup exports remain accepted by the 2.8
+engine; newly exported files identify 2.8.
+
+## Firmware update 0.3.0
+
+The October 22, 2026 stable-release audit updates SLOOP to 2.8, Melodee to 1.4.5,
+Skiff to 1.4, and the FM1 Open portable preview to V14. Felucca, X0X, FoMni and
+Jangada already match their latest stable releases. See [update details and
+compatibility](docs/firmware-updates.md).
+
+Existing private autosaves retain their filenames and settings. Before the first
+restore by each changed engine, the app preserves its previous raw save under
+`Instruments/Before-0.3.0/`; failed restores leave the original and backup in place.
+SLOOP's format remains compatible, although upstream 2.8 intentionally removes
+the SCRCH backspin/rewind sounds. New Skiff SONG REST entries require Skiff 1.4.
 
 ## Build
 
@@ -97,6 +111,11 @@ fixtures through `FM1_EXCHANGE_FIXTURES`; no private export is included. Tests
 create synthetic projects in the dedicated emulator's app storage.
 
 ## Verification and limits
+
+Version 0.3.0 passed 86 host tests and all 13 emulator checks, including old save
+migration, dense 60-second native playback, a separate 15-second real AudioTrack
+window with zero shortages/OS underruns, and failed-write recovery. Actual panel
+navigation exercised the new NOTES and FILTER RESO controls.
 
 The original Android port passed all eight native boot/LCD/note/flash checks,
 SLOOP sample/loop/song checks, actual multitouch and Activity lifecycle/state

@@ -21,6 +21,8 @@ def validate(source, descriptor):
     if head != descriptor['commit']:
         raise SystemExit('Source pin mismatch: '+descriptor['id'])
     run('git','-C',source,'diff','--exit-code','HEAD','--','firmware','tools','assets','fonts','web/fukiai.ttf')
+    for name,want in descriptor.get('notices_sha256',{}).items():
+        if hashlib.sha256((source/name).read_bytes()).hexdigest()!=want:raise SystemExit('Source notice mismatch '+descriptor['id']+'/'+name)
     for module,commit in descriptor.get('submodules',{}).items():
         actual=subprocess.check_output(['git','-C',str(source/module),'rev-parse','HEAD'],text=True).strip()
         if actual!=commit:raise SystemExit('Submodule pin mismatch: '+module)

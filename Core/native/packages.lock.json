@@ -4,13 +4,13 @@
     {
       "id": "sloop",
       "name": "SLOOP",
-      "version": "2.7.1",
-      "source": "https://github.com/isod89/sloop-fm1/tree/v2.7.1",
-      "url": "https://thefirmwarehub.com/fw/sloop-2.7.1.fwsc",
+      "version": "2.8",
+      "source": "https://github.com/isod89/sloop-fm1/tree/v2.8",
+      "url": "https://github.com/isod89/sloop-fm1/releases/download/v2.8/sloop-2.8.fwsc",
       "size": 610035,
-      "sha256": "7c9d269d15d1c1a48e0ebada7ffa2c2aa196c19d51056fd3f760d322322b335f",
+      "sha256": "fb69b4311790eb7ec09498be16ae2b71bd681840e221c0d8cfdb26fb5f9a2928",
       "kind": 2,
-      "path": "Research/NativeSloop/upstream-sloop-2.7.1/docs/firmware/sloop-2.7.1.fwsc"
+      "path": "Research/NativeSloop28/upstream-sloop-2.8/docs/firmware/sloop-2.8.fwsc"
     },
     {
       "id": "felucca",
@@ -21,7 +21,7 @@
       "size": 610090,
       "sha256": "dff3a38f7e5b9833e15aba322558c9485e9e422e3ff813c616c91b3584a2d909",
       "kind": 3,
-      "path": "Research/NativeFamily/felucca-1.6.1.fwsc"
+      "path": "Research/NativeFamilyOct22/felucca-1.6.1.fwsc"
     },
     {
       "id": "x0x",
@@ -32,40 +32,40 @@
       "size": 609684,
       "sha256": "a0c29deb930c65f1d40b5691b7d673f861418b438b7e65027cb9c671e6f44f5b",
       "kind": 4,
-      "path": "Research/NativeFamily/x0x-1.1.0.fwsc"
+      "path": "Research/NativeFamilyOct22/x0x-1.1.0.fwsc"
     },
     {
       "id": "melodee",
       "name": "Melodee",
-      "version": "1.4.3",
-      "source": "https://github.com/keremimo/melodee/tree/v1.4.3",
-      "url": "https://github.com/keremimo/melodee/releases/download/v1.4.3/melodee-1.4.3.fwsc",
-      "size": 610534,
-      "sha256": "efa44743be492278e25261f012b02425f373b8f31e9e396ef5e47b240a79be80",
+      "version": "1.4.5",
+      "source": "https://github.com/keremimo/melodee/tree/v1.4.5",
+      "url": "https://github.com/keremimo/melodee/releases/download/v1.4.5/melodee-1.4.5.fwsc",
+      "size": 610545,
+      "sha256": "a18f40d6f8c8087b25f115ab11286f85c7f04383de836227c463c6ce4745ce20",
       "kind": 5,
-      "path": "Research/NativeFamily/melodee-1.4.3.fwsc"
+      "path": "Research/NativeFamilyOct22/melodee-1.4.5.fwsc"
     },
     {
       "id": "official-open",
       "name": "FM1 Open",
-      "version": "V13",
-      "source": "https://github.com/m-vave/fm1_open/tree/b178ac43c25f010c60a878056fb5331fe693fd62",
-      "url": "https://open.m-vave.com/assets/fm1/c35330f1cad641f38908a6269c7316fdaf4ffb8b1091a7b3282fa31b9be9fe74.bin",
-      "size": 479796,
-      "sha256": "c35330f1cad641f38908a6269c7316fdaf4ffb8b1091a7b3282fa31b9be9fe74",
+      "version": "V14",
+      "source": "https://github.com/m-vave/fm1_open/tree/4d266850f8a46bd5154a0d495c1f60317156c9f7",
+      "url": "https://open.m-vave.com/assets/fm1/7e7b6d260163cdf9d716f7fab44f19be600edeffcd390de74370b83c917fd0c6.bin",
+      "size": 492084,
+      "sha256": "7e7b6d260163cdf9d716f7fab44f19be600edeffcd390de74370b83c917fd0c6",
       "kind": 6,
-      "path": "Research/NativeOfficial/FM1-Open-V13.fwsc"
+      "path": "Research/NativeOfficial14/FM1-Open-V14.fwsc"
     },
     {
       "id": "skiff",
       "name": "Skiff",
-      "version": "1.3.2",
-      "source": "https://github.com/illuminus5/skiff/tree/v1.3.2",
-      "url": "https://github.com/illuminus5/skiff/releases/download/v1.3.2/skiff-1.3.2.fwsc",
-      "size": 611605,
-      "sha256": "d77f60a500df772a136358fafba716e8be3d6311dd56430749d5ebb9f476584d",
+      "version": "1.4",
+      "source": "https://github.com/illuminus5/skiff/tree/v1.4",
+      "url": "https://github.com/illuminus5/skiff/releases/download/v1.4/skiff-1.4.fwsc",
+      "size": 610337,
+      "sha256": "0622a752e8304777c042ccea0732ba023e1413baa6dbc8724576e2ec76de02e0",
       "kind": 7,
-      "path": "Research/NativeSkiff/skiff-1.3.2.fwsc"
+      "path": "Research/NativeSkiff14/skiff-1.4.fwsc"
     },
     {
       "id": "fomni",

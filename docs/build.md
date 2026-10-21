@@ -56,10 +56,10 @@ This explicit command executes the following existing source preparers, then
 fetches package records from Core/native/packages.lock.json:
 
 ```sh
-python Core/native/prepare.py "$PWD/Research/NativeSloop/upstream-sloop-2.7.1"
-python Core/native/prepare_family.py "$PWD/Research/NativeFamily"
-python Core/native/official_preview_prepare.py "$PWD/Research/NativeOfficial/upstream-fm1-open"
-python Core/native/skiff_prepare.py "$PWD/Research/NativeSkiff/upstream-skiff"
+python Core/native/prepare.py "$PWD/Research/NativeSloop28/upstream-sloop-2.8"
+python Core/native/prepare_family.py "$PWD/Research/NativeFamilyOct22"
+python Core/native/official_preview_prepare.py "$PWD/Research/NativeOfficial14/upstream-fm1-open"
+python Core/native/skiff_prepare.py "$PWD/Research/NativeSkiff14/upstream-skiff"
 python Core/native/expansion_prepare.py "$PWD/Research/NativeExpansion"
 ```
 
@@ -71,20 +71,23 @@ Downloaded source and derived resources retain upstream component terms.
 The ignored cache layout is:
 
 ```text
-Research/NativeSloop/upstream-sloop-2.7.1/
-Research/NativeFamily/{felucca,x0x,melodee}/
-Research/NativeFamily/{felucca-1.6.1,x0x-1.1.0,melodee-1.4.3}.fwsc
-Research/NativeOfficial/upstream-fm1-open/
-Research/NativeOfficial/FM1-Open-V13.fwsc
-Research/NativeSkiff/upstream-skiff/
-Research/NativeSkiff/skiff-1.3.2.fwsc
+Research/NativeSloop28/upstream-sloop-2.8/
+Research/NativeFamilyOct22/{felucca,x0x,melodee}/
+Research/NativeFamilyOct22/{felucca-1.6.1,x0x-1.1.0,melodee-1.4.5}.fwsc
+Research/NativeOfficial14/upstream-fm1-open/
+Research/NativeOfficial14/FM1-Open-V14.fwsc
+Research/NativeSkiff14/upstream-skiff/
+Research/NativeSkiff14/skiff-1.4.fwsc
 Research/NativeExpansion/{fomni,jangada}/
 Research/NativeExpansion/{fomni-0.4,jangada-1.0.1}.fwsc
 ```
 
 SLOOP's exact package lives in its pinned checkout's docs/firmware directory.
-A local ignored Research symlink may reuse an existing prepared cache; no host
-path or symlink belongs in Git. The source/notice/resource checks still apply.
+A build may read an existing prepared cache through ignored local links.
+Preparation reruns resource generators, so use private cache copies before
+generation and new named directories for changed source pins. Never reset a
+shared checkout to a new pin. No host path or symlink belongs in Git. The
+source/notice/resource checks still apply.
 
 ## Compile, sign and install
 
@@ -94,7 +97,7 @@ adb install -r Android/build/FM1-android-arm64.apk
 ```
 
 The --core option prepares the Rust static archive and all eight native engines.
-Later Java/JNI-only iterations may omit --core to reuse that archive. APK assets
+Later Kotlin/JNI-only iterations may omit --core to reuse that archive. APK assets
 are checked against packages.lock.json before packaging. Native ELF segments
 use 16 KiB alignment. This is an arm64-only APK with minSdk 26 and targetSdk 35.
 

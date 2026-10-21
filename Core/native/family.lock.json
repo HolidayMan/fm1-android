@@ -78,17 +78,17 @@
     },
     {
       "id": "melodee",
-      "tag": "v1.4.3",
-      "commit": "ba9c812a603607012d68544b1acb6ccc8033eec5",
+      "tag": "v1.4.5",
+      "commit": "398ada1e09d864c12f3b778a43e45c7c2a8031b8",
       "source": "https://github.com/keremimo/melodee",
       "prefix": "mel_",
       "package": {
         "id": "melodee",
-        "version": "1.4.3",
-        "size": 610534,
-        "sha256": "efa44743be492278e25261f012b02425f373b8f31e9e396ef5e47b240a79be80",
-        "url": "https://github.com/keremimo/melodee/releases/download/v1.4.3/melodee-1.4.3.fwsc",
-        "source": "https://github.com/keremimo/melodee/tree/v1.4.3"
+        "version": "1.4.5",
+        "size": 610545,
+        "sha256": "a18f40d6f8c8087b25f115ab11286f85c7f04383de836227c463c6ce4745ce20",
+        "url": "https://github.com/keremimo/melodee/releases/download/v1.4.5/melodee-1.4.5.fwsc",
+        "source": "https://github.com/keremimo/melodee/tree/v1.4.5"
       },
       "generated_headers_sha256": {
         "melodee_cz1.h": "e8720f8911c3f8f8a9c9a243baac93878ae8dc598ceb6d5dae697da4e8568f43",
@@ -100,7 +100,26 @@
         "ui_keycaps.h": "3ee8f5703b443d0d2025db53c7a6472f7d1dfb86d448b46e990de52b734ad5a1",
         "ui_palettes.h": "f4e889ee862c9c424941416c00fc7ee7b294c89e9b166bd7c1968657a6397bca",
         "x0x_drum_tables.h": "d109515a203b4c456e8e8e7378a8158d3f07580bc2bec9c17345305fd34874dc"
-      }
+      },
+      "notices_sha256": {
+        "LICENSE": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+        "LICENSING.md": "ed933ab932e8c6345d1943e3eb290f53e41a2b6b75debd73c049e87cf5b772e4",
+        "LICENSES/Apache-2.0-msfa.txt": "27dd23b62bc11d0806562397a1e782f86fc7dcacd1ba7a1b58d3c78a54795e62",
+        "LICENSES/Apache-2.0.txt": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "LICENSES/BSD-3-Clause-uPD933.txt": "57747baee9c753ad902ebfcd95a50b131b6d3cc967045d87b69169c807bcde4a",
+        "LICENSES/MIT-DaisySP.txt": "7fa755aede5b5c2a8131a6db692f5818ed8d21dcbe632f41618af03b6d698126",
+        "LICENSES/MIT-Fukiai.txt": "fddeab17d69ab85a8e9c593beb0e93c279a9d74ff9504e1804bba123cb63e08e",
+        "LICENSES/MIT-Rings.txt": "60cd097bf74b2a3a0cadadeddec5d80b6806f83039e6ce9cb0ba511a1f17a2be",
+        "LICENSES/OFL-InterTight.txt": "50240ab035cf1b6b3307940235481d515c4b6de3ab1fa843dbe59e7892cb9d58",
+        "LICENSES/OFL-Rubik.txt": "472cbe7c25441df63e9c7864b43eb3c0f4b3df950c66a76224e6cfe1eae843fb",
+        "assets/resid/README.md": "53ce0ad14fa4cb0a73b3aa1a06d23003055cbc3e9470b8c562b8ec5c0156a961",
+        "assets/cz1-factory/README.md": "3e71f5fe44512c3766f17f3ff9db9a95a3b82e8b8b5645aba8e7c3ca6f5fa4e9",
+        "assets/prophet5-factory/README.md": "79aa8ec8b3760221e14020a51fe052e43a63d7cd02727abe4197e3c85598019e"
+      },
+      "licensing_notes": [
+        "GPL-3.0-only code with retained Apache/MIT/BSD/OFL and reSID GPL-2.0-or-later attribution.",
+        "Upstream explicitly states Casio CZ-1 and Sequential Prophet factory sound data have no licence granted; redistribution clearance is not established."
+      ]
     }
   ]
 }

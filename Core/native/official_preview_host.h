@@ -1,4 +1,4 @@
-/* FM1 Open V13 native build adapter; upstream APP GPLv3 + linking exception. */
+/* FM1 Open V14 native build adapter; upstream APP GPLv3 + linking exception. */
 #ifndef FM1_OFFICIAL_HOST_H
 #define FM1_OFFICIAL_HOST_H
 #include <stdint.h>

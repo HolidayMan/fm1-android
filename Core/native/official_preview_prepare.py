@@ -60,7 +60,7 @@ def main():
             subprocess.run(['git', '-C', str(source), 'fetch', '--depth', '1', 'origin', LOCK['commit']], check=True)
             subprocess.run(['git', '-C', str(source), 'checkout', '--detach', LOCK['commit']], check=True)
     verify(source)
-    print('Verified exact FM1 Open V13 PUBLIC PREVIEW source; no proprietary SDK is linked: ' + str(source))
+    print('Verified exact FM1 Open V14 PUBLIC PREVIEW source; no proprietary SDK is linked: ' + str(source))
 
 
 if __name__ == '__main__':

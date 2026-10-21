@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-only
- * Native iOS adapter for Skiff v1.3.2's unchanged public browser/host application.
+ * Native iOS adapter for Skiff v1.4's unchanged public browser/host application.
  * Skiff: illuminus5; based on Felucca by Leo Kuroshita / Hugelton Instruments.
  * The upstream audio ISR, UI, sequencer, project/pattern storage and DSP are used.
  * Source pin and generated resources: skiff.lock.json. No device SDK is linked. */

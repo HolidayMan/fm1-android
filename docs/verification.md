@@ -1,5 +1,61 @@
 # Verification boundaries
 
+## Firmware update 0.3.0 — October 22, 2026
+
+A full source rebuild passed with the eight exact current native pins. The host
+workspace passed 86 tests with all native backends enabled. The dedicated Pixel
+5 / API 33 arm64 emulator passed all 13 checks: eight engine routes, workspace
+sample/loop/song behavior, old Swift/iOS imports, old-firmware migration, dense
+rendering, and actual Activity input/audio/lifecycle/persistence.
+
+All eight old-engine stores restore byte-identically before normal boot and
+produce audible notes. Actual SLOOP 2.7.1 typed project/backup fixtures retain
+musical parts, samples and global settings, then export/reopen through 2.8 with
+audible loop and whole-song WAVs. Checksums and unknown package identities remain
+rejected. The synthetic backup fixture's duplicated song order was normalized
+using the actual old 2.7.1 native engine, with the original input preserved.
+The new 2.8 envelope identity requires an updated receiving host; reverse import
+into an older iOS app that pins only 2.7.1 is not claimed.
+
+The native SLOOP upgrade probe reopened the old rich flash, all twelve objects
+and arrangement byte-for-byte. It rendered 60 seconds with eight synth voices,
+six drums, twelve live grains and effects. Android separately rendered 2,646,000
+finite audible dense frames. Actual panel navigation displayed NOTES, edited
+pitch C3 to D#3 through KNOB 2, and changed AUDIO → FILTER RESO from OFF to 3.
+Skiff's actual scheduler/DSP test verified REST silence, another track advancing,
+and project persistence/reload.
+
+Dense real AudioTrack playback was measured separately for 15 seconds: OS head
+660706 frames at 44100 Hz, produced/output 660480 frames, zero application-ring
+shortages and zero OS underruns. The unchanged ring target is 1024 frames and
+the emulator's AudioTrack buffer is 1948 frames. Two bounded waits for prepared
+PCM lasted at most 1253 microseconds. Periodic saves now write immutable captured
+stores on one FIFO storage thread; forced boundaries await durability. Reused
+frame arrays remove the former per-frame LCD allocation. Trace measurements
+identified consecutive AudioTrack write requests only five microseconds apart;
+the writer now briefly waits for the independent producer before inserting real
+silence. The final steady-state assertions require zero shortages/OS underruns.
+
+Actual controller tests delayed an older checkpoint ahead of restoration and
+confirmed that it could not overwrite the committed candidate. A real temporary-
+file write failure preserved the active native handle and durable store; retry
+then succeeded. Repeated lower-edge taps, same-key two-finger reference counts,
+glissando/release, background/resume, explicit pause, edited master restoration
+and Activity recreation passed. The first updated run compared all four changed
+engines' pre-update copies against their previous stores; those copies remain
+under Instruments/Before-0.3.0 and were retrieved for the local receipt.
+
+APK 0.3.0 (code 3) retains org.fm1.android and the exact 0.2.0 signing certificate;
+normal installation used -r without clearing data. All eight packaged files
+match their source locks, all component notices are bundled, and the final source
+and APK scans contain zero removed-brand matches. Exact local artifact hashes,
+raw receipts and synthetic fixtures stay in ignored developer storage. No
+GitHub Release, store submission, physical latency or human listening acceptance
+is claimed. Upstream SCRCH changes and the portable-preview sound-bank limits
+remain documented in firmware-updates.md.
+
+## Earlier port and Kotlin baseline
+
 The original Android port was exercised on the dedicated Pixel 5 / API 33 arm64
 emulator. Eight exact compiled-native kinds booted, drew nonblank LCDs, produced
 finite nonzero note PCM, and round-tripped complete edited storage. Preview

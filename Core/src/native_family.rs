@@ -317,8 +317,8 @@ pub(super) fn for_digest(digest: [u8; 32], len: usize) -> Option<Api> {
     if (len == 0 || len == 610035)
         && digest
             == [
-                124, 157, 38, 157, 21, 209, 193, 164, 142, 14, 186, 218, 127, 250, 44, 42, 161,
-                150, 193, 157, 81, 5, 111, 211, 247, 96, 211, 34, 50, 43, 51, 95,
+                251, 105, 180, 49, 23, 144, 235, 126, 192, 148, 152, 190, 22, 174, 43, 113, 189,
+                104, 24, 64, 226, 33, 192, 216, 207, 219, 38, 251, 95, 154, 41, 40,
             ]
     {
         return Some(super::native_sloop::SLOOP);
@@ -344,11 +344,11 @@ pub(super) fn for_digest(digest: [u8; 32], len: usize) -> Option<Api> {
         return Some(x0x::API);
     }
     #[cfg(fm1_native_family)]
-    if (len == 0 || len == 610534)
+    if (len == 0 || len == 610545)
         && digest
             == [
-                239, 164, 71, 67, 190, 73, 34, 120, 226, 82, 97, 240, 18, 176, 36, 37, 243, 115,
-                184, 243, 30, 158, 57, 110, 245, 228, 123, 36, 10, 121, 190, 128,
+                161, 143, 64, 214, 248, 200, 8, 123, 37, 241, 21, 171, 17, 40, 111, 133, 199, 240,
+                67, 131, 222, 131, 98, 39, 196, 99, 198, 206, 71, 69, 206, 32,
             ]
     {
         return Some(melodee::API);
@@ -380,11 +380,11 @@ pub(super) fn for_digest(digest: [u8; 32], len: usize) -> Option<Api> {
         return Some(jangada::API);
     }
     #[cfg(fm1_native_skiff)]
-    if (len == 0 || len == 611605)
+    if (len == 0 || len == 610337)
         && digest
             == [
-                215, 127, 96, 165, 0, 223, 119, 42, 19, 99, 88, 250, 251, 167, 22, 232, 190, 61,
-                99, 17, 221, 86, 67, 7, 73, 213, 235, 185, 244, 118, 88, 77,
+                6, 34, 167, 82, 232, 48, 71, 119, 192, 66, 204, 234, 7, 50, 186, 2, 62, 20, 19,
+                186, 166, 219, 200, 114, 69, 118, 226, 236, 118, 222, 2, 224,
             ]
     {
         return Some(skiff::API);
@@ -560,7 +560,7 @@ mod tests {
         let mut cases = vec![
             (3, root.join("felucca-1.6.1.fwsc")),
             (4, root.join("x0x-1.1.0.fwsc")),
-            (5, root.join("melodee-1.4.3.fwsc")),
+            (5, root.join("melodee-1.4.5.fwsc")),
         ];
         #[cfg(fm1_native_expansion)]
         {
@@ -573,7 +573,7 @@ mod tests {
         #[cfg(fm1_native_skiff)]
         {
             let extra = std::path::PathBuf::from(std::env::var_os("FM1_NATIVE_SKIFF").unwrap());
-            cases.push((7, extra.parent().unwrap().join("skiff-1.3.2.fwsc")));
+            cases.push((7, extra.parent().unwrap().join("skiff-1.4.fwsc")));
         }
         for (kind, path) in cases {
             let mut package = std::fs::read(path).unwrap();
@@ -587,9 +587,9 @@ mod tests {
 }
 
 #[cfg(fm1_native_official_preview)]
-const OFFICIAL_PREVIEW_PACKAGE_SIZE: usize = 479796;
+const OFFICIAL_PREVIEW_PACKAGE_SIZE: usize = 492084;
 #[cfg(fm1_native_official_preview)]
 const OFFICIAL_PREVIEW_PACKAGE_SHA256: [u8; 32] = [
-    195, 83, 48, 241, 202, 214, 65, 243, 137, 8, 166, 38, 156, 115, 22, 253, 175, 79, 251, 139, 16,
-    145, 167, 179, 40, 47, 163, 27, 155, 233, 254, 116,
+    126, 123, 109, 38, 1, 99, 205, 249, 215, 22, 247, 250, 180, 79, 25, 190, 96, 14, 222, 255, 205,
+    57, 13, 231, 67, 112, 184, 60, 145, 127, 208, 198,
 ];

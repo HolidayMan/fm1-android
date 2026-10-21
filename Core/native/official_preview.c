@@ -1,4 +1,4 @@
-/* Native host of the exact public V13 browser sources, not the opaque device SDK. */
+/* Native host of the exact public V14 browser sources, not the opaque device SDK. */
 #include "official_preview_host.h"
 #undef malloc
 #undef calloc
@@ -64,3 +64,7 @@ void ofp_flash_copy(uint8_t *data){if(data)memcpy(data,sim_flash(),FLASH_BYTES);
 uint32_t ofp_workload_metrics(uint64_t *out,uint32_t cap){
     if(out){for(unsigned i=0;i<cap&&i<16;++i)out[i]=0;if(cap>0)out[0]=blocks_rendered;if(cap>12)out[12]=allocation_failures;}return cap<16?cap:16;
 }
+
+/* Public browser build has no optional hardware MIDI panel state. V14
+ * declares this hook weak; provide its absent-hook no-op for native linkers. */
+void groove_midi_panel_reset(void) {}

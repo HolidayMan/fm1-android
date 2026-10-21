@@ -648,13 +648,13 @@ mod native_public_abi_tests {
         let official =
             std::path::PathBuf::from(std::env::var_os("FM1_NATIVE_OFFICIAL_PREVIEW").unwrap());
         let mut cases = vec![
-            (2, sloop.join("docs/firmware/sloop-2.7.1.fwsc"), RAM),
+            (2, sloop.join("docs/firmware/sloop-2.8.fwsc"), RAM),
             (3, family.join("felucca-1.6.1.fwsc"), RAM),
             (4, family.join("x0x-1.1.0.fwsc"), RAM),
-            (5, family.join("melodee-1.4.3.fwsc"), RAM),
+            (5, family.join("melodee-1.4.5.fwsc"), RAM),
             (
                 6,
-                official.parent().unwrap().join("FM1-Open-V13.fwsc"),
+                official.parent().unwrap().join("FM1-Open-V14.fwsc"),
                 536576,
             ),
         ];
@@ -669,7 +669,7 @@ mod native_public_abi_tests {
         #[cfg(fm1_native_skiff)]
         {
             let root = std::path::PathBuf::from(std::env::var_os("FM1_NATIVE_SKIFF").unwrap());
-            cases.push((7, root.parent().unwrap().join("skiff-1.3.2.fwsc"), RAM));
+            cases.push((7, root.parent().unwrap().join("skiff-1.4.fwsc"), RAM));
         }
         for (kind, path, expected_size) in cases {
             let bytes = std::fs::read(path).unwrap();

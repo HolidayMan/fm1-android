@@ -12,12 +12,12 @@ copyright/license comments and notices are retained.
 
 | Native source | Public repository | Exact commit |
 | --- | --- | --- |
-| SLOOP | https://github.com/isod89/sloop-fm1 | `4ec1ac829fd2bdf2c571ea215fb3d62477d01220` |
+| SLOOP | https://github.com/isod89/sloop-fm1 | `b77bf55e3bf804665b8f5dffb5955bd8443311f0` |
 | felucca | https://github.com/hugelton/Felucca | `a53ecf428c29c780108fd70a31b71a32a6b5c313` |
 | x0x | https://github.com/charlesvestal/fm1-x0x | `27f6fac7e07ce97b5de158b45aec99f59a9e23fd` |
-| melodee | https://github.com/keremimo/melodee | `ba9c812a603607012d68544b1acb6ccc8033eec5` |
-| FM1 Open | https://github.com/m-vave/fm1_open | `b178ac43c25f010c60a878056fb5331fe693fd62` |
-| Skiff | https://github.com/illuminus5/skiff | `c4bb2b4e9015cf6244f98db1d319874e15eb0767` |
+| melodee | https://github.com/keremimo/melodee | `398ada1e09d864c12f3b778a43e45c7c2a8031b8` |
+| FM1 Open | https://github.com/m-vave/fm1_open | `4d266850f8a46bd5154a0d495c1f60317156c9f7` |
+| Skiff | https://github.com/illuminus5/skiff | `c01fa1ed619266d770ea6552b153612e1b77d0a9` |
 | fomni | https://github.com/charlesvestal/fm1-fomni | `6ecd227013cc18def0e89d035b3760eb268b342b` |
 | jangada | https://github.com/zednaked/jangada | `46e6c2c2ed94b609918aa6f5f7381fac915ffc45` |
 
@@ -40,3 +40,12 @@ packaged as the icon. No generation prompt is included.
 The README screenshot is the actual Android native panel in synthetic test
 state on an emulator. It contains no owner project, personal saved data or
 private recording. Engine LCD and UI graphics retain their upstream attribution.
+
+The 0.3.0 audit retains the newly checked upstream notice files under
+`Core/native/licenses/` and includes all of them in the APK's About notices.
+Melodee's Casio/Sequential factory data explicitly has no redistribution license
+granted by upstream; the lock and original notices retain that limitation.
+Skiff's YuE2 BREAK/FUNK provenance remains separate from its GPL source license.
+FM1 Open V14 still builds the synthesized-demo portable source bank; the matching
+hardware package identifies the admitted release and does not supply its opaque
+SDK or factory bank to the native preview.

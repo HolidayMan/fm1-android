@@ -1,4 +1,4 @@
-/* sloop_core.c -- SLOOP 2.7.1 (engines/sloop/upstream, GPL-3.0-only; isod89, after Felucca by Leo
+/* sloop_core.c -- SLOOP 2.8 (engines/sloop/upstream, GPL-3.0-only; isod89, after Felucca by Leo
  * Kuroshita / Hügelton Instruments), the whole firmware, as a library the plugin can drive: a
  * virtual FM-1 running Sloop, with its sound, sequencer, arranger, screen, front panel, projects,
  * user presets and editor protocol.
@@ -272,6 +272,7 @@ static void felucca_init(void)
     song.g[G_DRMAP] = midi_set[7];
     song.g[G_CLKOUT] = midi_set[9];
     song.g[G_RMCH] = midi_set[8];
+    song.g[G_FXFADE] = fxfade; /* 2.8 main.c: restore stored punch-in FX fade */
     layers_init();
     go_home();
     ui.force = 1;

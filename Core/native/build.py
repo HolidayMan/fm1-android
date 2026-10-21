@@ -9,7 +9,7 @@ import subprocess
 import sys
 from target_config import Toolchain
 
-PIN = '4ec1ac829fd2bdf2c571ea215fb3d62477d01220'
+PIN = 'b77bf55e3bf804665b8f5dffb5955bd8443311f0'
 HERE = pathlib.Path(__file__).resolve().parent
 
 def run(*args):
@@ -28,7 +28,7 @@ def main():
     source = a.source.resolve()
     head = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
     if head != PIN:
-        sys.exit('native SLOOP requires exact v2.7.1 source commit ' + PIN)
+        sys.exit('native SLOOP requires exact v2.8 source commit ' + PIN)
     run('git', '-C', source, 'diff', '--exit-code', 'HEAD', '--', 'firmware', 'tools', 'assets')
     generated = source / 'build/generated'
     lock = json.loads((HERE / 'upstream.lock.json').read_text())

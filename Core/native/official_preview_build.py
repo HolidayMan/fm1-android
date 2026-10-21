@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile exact public FM1 Open V13 browser sources as a native preview.
+"""Compile exact public FM1 Open V14 browser sources as a native preview.
 
 No opaque PI32v2 SDK archive participates. Output and downloaded source must stay
 Git-ignored. Requires LLVM 20 clang/llvm-link for the pre-optimization IR rewrite.
@@ -76,7 +76,7 @@ def main():
              'official_preview_state.py', 'official_preview_prepare.py', 'official_preview.lock.json', 'fel_state.py', 'target_config.py']},
     }
     (out / 'receipt.json').write_text(json.dumps(record, indent=2) + '\n')
-    print('Built FM1 Open V13 PUBLIC SOURCE PREVIEW; no exact hardware firmware parity is claimed.')
+    print('Built FM1 Open V14 PUBLIC SOURCE PREVIEW; no exact hardware firmware parity is claimed.')
 
 
 if __name__ == '__main__':

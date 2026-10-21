@@ -15,7 +15,7 @@ def verify(source,generated=True):
     source=Path(source).resolve()
     if not source.is_relative_to(RESEARCH.resolve()):raise ValueError('Skiff source/assets must remain in ignored Research/')
     head=subprocess.check_output(['git','-C',str(source),'rev-parse','HEAD'],text=True).strip()
-    if head!=LOCK['commit']:raise ValueError('Skiff requires exact v1.3.2 source commit '+LOCK['commit'])
+    if head!=LOCK['commit']:raise ValueError('Skiff requires exact v1.4 source commit '+LOCK['commit'])
     subprocess.run(['git','-C',str(source),'diff','--exit-code','HEAD'],check=True)
     for name,expected in LOCK['notices_sha256'].items():
         if hashlib.sha256((source/name).read_bytes()).hexdigest()!=expected:raise ValueError('Skiff notice changed: '+name)
@@ -39,7 +39,7 @@ def main():
         if not features.check('raqm'):raise ValueError('Build-only Pillow must support RAQM for exact upstream fonts')
         spec=importlib.util.spec_from_file_location('skiff_upstream_build',source/'tools/build.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);module.generate()
     verify(source)
-    print('Verified exact Skiff v1.3.2 source and all eight generated resources at '+str(source))
+    print('Verified exact Skiff v1.4 source and all eight generated resources at '+str(source))
 if __name__=='__main__':
     try:main()
     except (ValueError,subprocess.CalledProcessError) as error:sys.exit(str(error))

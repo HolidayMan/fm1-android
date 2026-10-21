@@ -22,6 +22,8 @@ def main():
             subprocess.run(['git','clone','--depth','1','--branch',d['tag'],d['source'],str(src)],check=True)
         if subprocess.check_output(['git','-C',str(src),'rev-parse','HEAD'],text=True).strip()!=d['commit']:
             raise SystemExit('Source pin mismatch '+d['id'])
+        for name,want in d.get('notices_sha256',{}).items():
+            if hashlib.sha256((src/name).read_bytes()).hexdigest()!=want:raise SystemExit('Source notice mismatch '+d['id']+'/'+name)
         if d.get('submodules'):subprocess.run(['git','-C',str(src),'submodule','update','--init','--recursive'],check=True)
         subprocess.run(['git','-C',str(src),'diff','--exit-code','HEAD'],check=True)
         if not a.generate_one:

@@ -12,6 +12,7 @@ import android.view.MotionEvent
 import java.io.*
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import kotlin.math.*
 import org.json.*
@@ -22,11 +23,16 @@ class EngineInstrumentation : Instrumentation() {
     private var failures = 0
     private var uiOnly = false
     private var exchangeTests = false
+    private var captureBaseline = false
+    private var migrationTests = false
+    private val expectedUpdateBackups = linkedMapOf<Int, ByteArray>()
 
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
         uiOnly = arguments?.getString("uiOnly") == "true"
         exchangeTests = arguments?.getString("exchange") == "true"
+        captureBaseline = arguments?.getString("captureBaseline") == "true"
+        migrationTests = arguments?.getString("migration") == "true"
         Thread(::runChecks, "fm1-instrumentation").start()
     }
 
@@ -95,6 +101,7 @@ class EngineInstrumentation : Instrumentation() {
             require(colors > 20, "blank LCD")
             for (led in leds) require(led.isFinite(), "nonfinite LED")
             val flash = NativeEngine.flash(m)
+            if (captureBaseline) baselineFile("kind-$kind.flash", flash)
             require(flash.size == if (kind == 6) 536576 else 1048576, "wrong flash size")
             flash[flash.lastIndex] = (flash.last().toInt() xor 0x25).toByte()
             val candidate = NativeEngine.create(bytes, kind)
@@ -235,6 +242,23 @@ class EngineInstrumentation : Instrumentation() {
             song.parts["object2"] = original.parts.getValue("object0").clone()
             song.parts["object3"] = original.parts.getValue("object0").clone()
             song.parts["arrangement"] = byteArrayOf(0, 0, 3, 0, 0, 0, 0, 0, 0, 1, 2, 0, 1, 1, 2)
+            if (captureBaseline) {
+                song.parts["sample0"] = sample
+                val normalizedMachine = song.create(bytes)
+                try {
+                    val normalized = ProjectSnapshot.capture(normalizedMachine, song.master)
+                    baselineFile(
+                        "sloop-2.7.1.fm1backup",
+                        normalized.envelope("Recorded 2.7.1 migration fixture", true),
+                    )
+                    baselineFile(
+                        "sloop-2.7.1.fm1project",
+                        normalized.envelope("Recorded 2.7.1 migration project", false),
+                    )
+                } finally {
+                    NativeEngine.destroy(normalizedMachine)
+                }
+            }
             val before = fingerprint(song)
             val loopBytes = AudioExport.render(targetContext, song, bytes, false, 1, 0).readBytes()
             require(loopBytes.size == 44 + 44100 * 4, "loop frame count differs")
@@ -482,6 +506,7 @@ class EngineInstrumentation : Instrumentation() {
             delay(900)
             val controller = field(activity, "engine") as EngineController
             val panel = field(activity, "panel") as PanelView
+            controller.diagnostics = true
             runOnMainSync {
                 controller.selectEngine(2)
                 controller.setPaused(false)
@@ -493,6 +518,26 @@ class EngineInstrumentation : Instrumentation() {
                 controller.selectedKind == 2 && controller.status.isEmpty(),
                 "activity native engine not ready: ${controller.status}",
             )
+            if (migrationTests) {
+                for ((kind, expected) in expectedUpdateBackups) {
+                    runOnMainSync { controller.selectEngine(kind) }
+                    barrier(controller)
+                    require(
+                        controller.selectedKind == kind && controller.status.isEmpty(),
+                        "updated engine did not load preserved save: $kind ${controller.status}",
+                    )
+                    val suffix = if (kind == 6) ".preview.flash" else ".flash"
+                    val backup =
+                        File(targetContext.filesDir, "Instruments/Before-0.3.0/$kind$suffix")
+                    require(
+                        backup.isFile && expected.contentEquals(backup.readBytes()),
+                        "pre-update backup changed for kind $kind",
+                    )
+                }
+                runOnMainSync { controller.selectEngine(2) }
+                barrier(controller)
+                delay(300)
+            }
             val a = point(panel, 21)
             val b = point(panel, 23)
             val c = point(panel, 25)
@@ -549,6 +594,31 @@ class EngineInstrumentation : Instrumentation() {
             delay(300)
             require(controller.peak > 0.00001, "actual activity note generated no PCM")
             require(controller.outputFrames > 0, "AudioTrack received no generated PCM")
+            // When explicit old-source fixtures are supplied, stress the actual output worker too.
+            if (migrationTests) {
+                val done = CountDownLatch(1)
+                var failure: Throwable? = null
+                (field(controller, "worker") as Handler).post {
+                    try {
+                        val machine = field(controller, "machine") as Long
+                        NativeEngine.release(machine)
+                        require(
+                            NativeEngine.restore(machine, migrationAsset("dense-2.7.1.flash")),
+                            "controller dense restore failed",
+                        )
+                        require(
+                            NativeEngine.transport(machine, true),
+                            "controller dense transport failed",
+                        )
+                    } catch (error: Throwable) {
+                        failure = error
+                    } finally {
+                        done.countDown()
+                    }
+                }
+                require(done.await(10, TimeUnit.SECONDS), "controller dense setup timed out")
+                failure?.let { throw it }
+            }
             // Measure warmed continuous playback separately from loading and lifecycle gaps.
             down = SystemClock.uptimeMillis()
             pointer(down, MotionEvent.ACTION_DOWN, a)
@@ -556,11 +626,20 @@ class EngineInstrumentation : Instrumentation() {
             val systemTrack = field(controller, "track") as AudioTrack
             val osUnderrunsStart = systemTrack.underrunCount
             val osHeadStart = Integer.toUnsignedLong(systemTrack.playbackHeadPosition)
+            controller.checkpointCaptureMaxMicros = 0
+            controller.checkpointWriteMaxMicros = 0
+            controller.snapshotMaxMicros = 0
+            controller.producerMaxGapMicros = 0
+            controller.lastUnderflowProducerAgeMicros = 0
+            controller.lastUnderflowOutputIntervalMicros = 0
+            controller.pcmWaitCount = 0
+            controller.pcmWaitMaxMicros = 0
+            val checkpointCount = controller.checkpointCount
             val warmStart = SystemClock.elapsedRealtime()
             val warmProduced = controller.producedFrames
             val warmOutput = controller.outputFrames
             val warmUnderflow = controller.underflowFrames
-            delay(5000)
+            delay(if (migrationTests) 15000 else 5000)
             val warmMillis = SystemClock.elapsedRealtime() - warmStart
             val warmFrames = controller.producedFrames - warmProduced
             val warmOutputFrames = controller.outputFrames - warmOutput
@@ -572,8 +651,33 @@ class EngineInstrumentation : Instrumentation() {
             pointer(down, MotionEvent.ACTION_UP, a)
             val warmDiagnostic =
                 "warmed audio did not keep generating/outputting PCM: elapsedMs=$warmMillis, produced=$warmFrames, output=$warmOutputFrames, underflow=$warmUnderflowFrames, status=${controller.status}, ready=${field(controller,"ready")}, foreground=${field(controller,"foreground")}, paused=${controller.paused}, audioBufferFrames=${field(controller,"audioBufferFrames")}, osUnderruns=$osUnderruns, osPlaybackHeadFrames=$osHeadFrames"
+            require(
+                warmUnderflowFrames == 0L,
+                "steady playback inserted $warmUnderflowFrames silent frames; $warmDiagnostic",
+            )
+            require(osUnderruns == 0, "steady AudioTrack OS underruns: $osUnderruns")
             val warmed =
                 JSONObject()
+                    .put(
+                        "workload",
+                        if (migrationTests) "dense eight-voice/drum/granular/FX source fixture"
+                        else "held note",
+                    )
+                    .put("checkpointCaptureMaxMicros", controller.checkpointCaptureMaxMicros)
+                    .put("checkpointDiskMaxMicros", controller.checkpointWriteMaxMicros)
+                    .put("snapshotMaxMicros", controller.snapshotMaxMicros)
+                    .put("checkpointCount", controller.checkpointCount - checkpointCount)
+                    .put("producerMaxGapMicros", controller.producerMaxGapMicros)
+                    .put(
+                        "lastUnderflowProducerAgeMicros",
+                        controller.lastUnderflowProducerAgeMicros,
+                    )
+                    .put(
+                        "lastUnderflowOutputIntervalMicros",
+                        controller.lastUnderflowOutputIntervalMicros,
+                    )
+                    .put("pcmWaitCount", controller.pcmWaitCount)
+                    .put("pcmWaitMaxMicros", controller.pcmWaitMaxMicros)
                     .put("osUnderrunDelta", osUnderruns)
                     .put("osPlaybackHeadFrames", osHeadFrames)
                     .put("osSampleRate", systemTrack.sampleRate)
@@ -632,6 +736,36 @@ class EngineInstrumentation : Instrumentation() {
             require(savedName != null, "saved controller backup missing")
             runOnMainSync { controller.setMaster(812) }
             barrier(controller)
+            // A slow previous autosave must finish before a replacement store is committed.
+            val store = File(targetContext.filesDir, "Instruments/2.flash")
+            val previousStore = store.readBytes()
+            val queue = field(controller, "storage") as ExecutorService
+            queue.submit { delay(180) }
+            val staged = CountDownLatch(1)
+            var stageFailure: Throwable? = null
+            (field(controller, "worker") as Handler).post {
+                try {
+                    val machine = field(controller, "machine") as Long
+                    NativeEngine.transport(machine, false)
+                    advance(machine, 512)
+                    NativeEngine.encoder(machine, 1, 1)
+                    advance(machine, 512)
+                    require(
+                        NativeEngine.commit(machine) == 0,
+                        "staged old checkpoint commit failed",
+                    )
+                    val checkpoint =
+                        controller.javaClass.getDeclaredMethod("checkpoint", java.lang.Boolean.TYPE)
+                    checkpoint.isAccessible = true
+                    checkpoint.invoke(controller, false)
+                } catch (error: Throwable) {
+                    stageFailure = error
+                } finally {
+                    staged.countDown()
+                }
+            }
+            require(staged.await(10, TimeUnit.SECONDS), "staged old checkpoint timed out")
+            stageFailure?.let { throw it }
             runOnMainSync { controller.openProject(savedName!!) }
             barrier(controller)
             require(
@@ -639,6 +773,53 @@ class EngineInstrumentation : Instrumentation() {
                 "controller saved-copy open failed: ${controller.status}",
             )
             require(controller.getMaster() == 271, "backup did not restore edited master")
+            val committed = store.readBytes()
+            val checked = CountDownLatch(1)
+            var committedMatches = false
+            (field(controller, "worker") as Handler).post {
+                committedMatches =
+                    committed.contentEquals(
+                        NativeEngine.flash(field(controller, "machine") as Long)
+                    )
+                checked.countDown()
+            }
+            require(
+                checked.await(10, TimeUnit.SECONDS) && committedMatches,
+                "older queued checkpoint overwrote restored candidate",
+            )
+            require(
+                !previousStore.contentEquals(committed),
+                "queued-store fixture did not exercise a different committed snapshot",
+            )
+            // Inject a real filesystem write error: opening a candidate must retain the live
+            // handle/store.
+            val originalHandle = field(controller, "machine") as Long
+            val obstruction = File(store.path + ".tmp")
+            require(obstruction.mkdir(), "could not stage atomic-write failure")
+            try {
+                runOnMainSync { controller.openProject(savedName!!) }
+                barrier(controller)
+                require(
+                    field(controller, "machine") as Long == originalHandle,
+                    "failed save replaced the active machine",
+                )
+                require(
+                    committed.contentEquals(store.readBytes()),
+                    "failed save changed the durable store",
+                )
+                require(
+                    controller.status.contains("could not be saved"),
+                    "filesystem error was not reported",
+                )
+            } finally {
+                require(obstruction.delete(), "could not remove test write obstruction")
+            }
+            runOnMainSync { controller.openProject(savedName!!) }
+            barrier(controller)
+            require(
+                controller.status.contains("Opened"),
+                "restore retry after write failure did not recover",
+            )
             runOnMainSync { controller.selectEngine(2) }
             barrier(controller)
             require(
@@ -670,11 +851,13 @@ class EngineInstrumentation : Instrumentation() {
                 runOnMainSync { reopened.finish() }
             }
             require(
-                warmFrames > 44100 * 3 && warmOutputFrames > 44100 * 3,
+                warmFrames > 44100 * (if (migrationTests) 12 else 3) &&
+                    warmOutputFrames > 44100 * (if (migrationTests) 12 else 3),
                 "$warmDiagnostic, lifecycleAndEditedMasterRecreationPassed=true",
             )
             return JSONObject()
                 .put("warmedPlayback", warmed)
+                .put("preUpdateBackupKinds", JSONArray(expectedUpdateBackups.keys.toList()))
                 .put("bottomTaps", 8)
                 .put("sameKeyReferenceCount", true)
                 .put("multitouchGlissando", true)
@@ -682,6 +865,9 @@ class EngineInstrumentation : Instrumentation() {
                 .put("explicitPauseRetained", true)
                 .put("automaticResume", true)
                 .put("savedCopyReload", true)
+                .put("orderedCheckpointBeforeRestore", true)
+                .put("writeFailureKeptActiveAndDurableStore", true)
+                .put("writeFailureRetryRecovered", true)
                 .put("restoredMasterAfterActivityRecreation", 271)
                 .put("producedFrames", controller.producedFrames)
                 .put("outputFrames", controller.outputFrames)
@@ -692,13 +878,198 @@ class EngineInstrumentation : Instrumentation() {
         }
     }
 
+    private fun migrationAsset(name: String) =
+        context.assets.open("migration/$name").use { it.readBytes() }
+
+    /** Actual 0.2.0 engine output, supplied explicitly; never generated by the new engine. */
+    private fun migration(): JSONObject {
+        val metrics = JSONObject()
+        for (kind in 2..9) {
+            val oldFlash = migrationAsset("kind-$kind.flash")
+            val machine = NativeEngine.create(asset(kind), kind)
+            try {
+                require(
+                    NativeEngine.restore(machine, oldFlash),
+                    "old store rejected for kind $kind",
+                )
+                require(
+                    oldFlash.contentEquals(NativeEngine.flash(machine)),
+                    "old store changed on first restore for kind $kind",
+                )
+                // Skiff deliberately suppresses keys during its 430 ms firmware boot splash.
+                // Match the same boot advance used by the fresh-engine note check.
+                advance(machine, 23040)
+                NativeEngine.volume(machine, 716)
+                NativeEngine.key(machine, if (kind == 4) 15 else 21, true)
+                val peak = advance(machine, 44100)
+                require(peak > 0.00001, "old store produced silent note for kind $kind")
+                NativeEngine.release(machine)
+                metrics.put(
+                    "kind-$kind",
+                    JSONObject().put("rawStoreIdentical", true).put("peak", peak),
+                )
+            } finally {
+                NativeEngine.destroy(machine)
+            }
+        }
+        for (extension in arrayOf("fm1backup", "fm1project")) {
+            val name = "sloop-2.7.1.$extension"
+            val encoded = migrationAsset(name)
+            val envelope = JSONObject(String(encoded, Charsets.UTF_8))
+            require(
+                envelope.getJSONObject("snapshot").getString("packageSHA256") ==
+                    ProjectSnapshot.LEGACY_PACKAGE,
+                "fixture is not an old 2.7.1 export",
+            )
+            val incoming = ProjectSnapshot.fromEnvelope(encoded, name)
+            val original = fingerprint(incoming)
+            val restored =
+                if (extension == "fm1project") overlayFresh(incoming, asset(2)) else incoming
+            var machine = restored.create(asset(2))
+            try {
+                val captured = ProjectSnapshot.capture(machine, restored.master)
+                // A project overlays the current settings, then its separate song order replaces
+                // the duplicated arrangement field in persist_t. The old native engine does this
+                // too.
+                val expected = restored.copy()
+                if (extension == "fm1project") {
+                    val legacySettings =
+                        ProjectSnapshot.fromEnvelope(
+                                migrationAsset("sloop-2.7.1.fm1backup"),
+                                "old.fm1backup",
+                            )
+                            .parts
+                            .getValue("object1")
+                    val settings = expected.parts.getValue("object1")
+                    require(
+                        settings.size == 88 && legacySettings.size == 88,
+                        "unexpected legacy settings layout",
+                    )
+                    legacySettings.copyInto(settings, 48, 48, 84)
+                }
+                for ((part, data) in expected.parts) if (part != "flash")
+                    require(
+                        data.contentEquals(captured.parts[part]),
+                        "old typed $part changed in $extension",
+                    )
+                val currentEnvelope = captured.envelope("2.8 migrated roundtrip", true)
+                require(
+                    JSONObject(String(currentEnvelope, Charsets.UTF_8))
+                        .getJSONObject("snapshot")
+                        .getString("packageSHA256") == ProjectSnapshot.PACKAGE,
+                    "new export retained the old package identity",
+                )
+                val current = ProjectSnapshot.fromEnvelope(currentEnvelope, "current.fm1backup")
+                NativeEngine.destroy(machine)
+                machine = current.create(asset(2))
+                require(NativeEngine.transport(machine, true), "migrated loop did not start")
+                val peak = advance(machine, 88200)
+                require(peak > 0.001, "migrated recorded notes are silent")
+                NativeEngine.transport(machine, false)
+                val loop =
+                    AudioExport.render(targetContext, current, asset(2), false, 1, 0).readBytes()
+                val song =
+                    AudioExport.render(targetContext, current, asset(2), true, 1, 0).readBytes()
+                require(
+                    wavPeak(loop) > 0.001 && wavPeak(song) > 0.001,
+                    "migrated loop/song export is silent",
+                )
+                require(fingerprint(incoming) == original, "migration modified its source envelope")
+                val output =
+                    File(
+                        targetContext.getExternalFilesDir(null),
+                        "migrated-2.8-$extension.fm1backup",
+                    )
+                output.writeBytes(currentEnvelope)
+                metrics.put(
+                    extension,
+                    JSONObject()
+                        .put("musicalPartsAndGlobalSettingsRetained", true)
+                        .put("loopPeak", wavPeak(loop))
+                        .put("songPeak", wavPeak(song))
+                        .put("newEnvelope", output.absolutePath),
+                )
+            } finally {
+                NativeEngine.destroy(machine)
+            }
+        }
+        val rejected = JSONObject(String(migrationAsset("sloop-2.7.1.fm1backup"), Charsets.UTF_8))
+        rejected.getJSONObject("snapshot").put("packageSHA256", "0".repeat(64))
+        var invalidRejected = false
+        try {
+            ProjectSnapshot.fromEnvelope(rejected.toString().toByteArray(), "unknown.fm1backup")
+        } catch (expected: Exception) {
+            invalidRejected = true
+        }
+        require(invalidRejected, "unaudited workspace package identity accepted")
+        return metrics.put("unknownPackageRejected", true)
+    }
+
+    private fun densePlayback(): JSONObject {
+        val machine = NativeEngine.create(asset(2), 2)
+        try {
+            require(
+                NativeEngine.restore(machine, migrationAsset("dense-2.7.1.flash")),
+                "dense fixture rejected",
+            )
+            NativeEngine.volume(machine, 716)
+            require(NativeEngine.transport(machine, true), "dense fixture did not start")
+            val start = SystemClock.elapsedRealtime()
+            val peak = advance(machine, 60 * 44100)
+            require(peak > 0.001, "dense playback is silent")
+            return JSONObject()
+                .put("frames", 60 * 44100)
+                .put("secondsRendered", 60)
+                .put("peak", peak)
+                .put("offlineRenderWallMillis", SystemClock.elapsedRealtime() - start)
+                .put("physicalLatencyMeasured", false)
+        } finally {
+            NativeEngine.destroy(machine)
+        }
+    }
+
+    private fun baselineFile(name: String, bytes: ByteArray) {
+        val directory = File(targetContext.getExternalFilesDir(null), "firmware-baseline")
+        require(directory.isDirectory || directory.mkdirs(), "baseline directory unavailable")
+        File(directory, name).writeBytes(bytes)
+    }
+
     private fun runChecks() {
+        if (captureBaseline && ProjectSnapshot.digest(asset(2)) != ProjectSnapshot.LEGACY_PACKAGE) {
+            val result = Bundle()
+            result.putString(
+                "stream",
+                "Baseline capture requires the installed 0.2.0 APK; current firmware is not a legacy fixture.",
+            )
+            finish(0, result)
+            return
+        }
+        if (migrationTests) {
+            // Dedicated emulator only: fill missing test stores, retain any existing synthetic
+            // stores.
+            val prefs = targetContext.getSharedPreferences("fm1", 0)
+            val directory = File(targetContext.filesDir, "Instruments").apply { mkdirs() }
+            for (kind in intArrayOf(2, 5, 6, 7)) {
+                val suffix = if (kind == 6) ".preview.flash" else ".flash"
+                val save = File(directory, "$kind$suffix")
+                if (!save.exists()) {
+                    save.writeBytes(migrationAsset("kind-$kind.flash"))
+                    prefs.edit().remove("storageRevision-$kind").commit()
+                }
+                if (prefs.getString("storageRevision-$kind", null) != "0.3.0")
+                    expectedUpdateBackups[kind] = save.readBytes()
+            }
+        }
         if (!uiOnly) {
             for (kind in 2..9) check("engine-$kind") { engine(kind) }
             check("sloop-workspace-sample-loop-song", ::workspace)
             if (exchangeTests) check("cross-platform-workspace", ::crossPlatform)
+            if (migrationTests) {
+                check("old-firmware-store-and-typed-workspace-migration", ::migration)
+                check("sloop-dense-60-seconds", ::densePlayback)
+            }
         }
-        check("activity-multitouch-audio-lifecycle-persistence", ::activity)
+        if (!captureBaseline) check("activity-multitouch-audio-lifecycle-persistence", ::activity)
         val result = Bundle()
         try {
             val receipt =
@@ -708,6 +1079,7 @@ class EngineInstrumentation : Instrumentation() {
                     .put("abi", android.os.Build.SUPPORTED_ABIS[0])
                     .put("failures", failures)
                     .put("exchangeTestsRequested", exchangeTests)
+                    .put("migrationTestsRequested", migrationTests)
                     .put(
                         "exchangeTestStatus",
                         if (exchangeTests) "included"

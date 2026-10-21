@@ -9,8 +9,8 @@ https://github.com/charlesvestal/fm1-x0x commit 27f6fac7e07ce97b5de158b45aec99f5
 Whole upstream application, sequencer and real sound-engine source are compiled;
 its hardware platform is adapted to the serial native worker, physical flash and panel.
 
-Melodee 1.4.3, GPL-3.0-only, Kerem Kilic / Ellic Studio, after Felucca.
-https://github.com/keremimo/melodee commit ba9c812a603607012d68544b1acb6ccc8033eec5
+Melodee 1.4.5, GPL-3.0-only, Kerem Kilic / Ellic Studio, after Felucca.
+https://github.com/keremimo/melodee commit 398ada1e09d864c12f3b778a43e45c7c2a8031b8
 The included Casio CZ-1 and Sequential Prophet factory programs retain their
 respective owners' rights; upstream does not grant a redistribution license.
 External engine source and generated resources remain in the ignored local cache.

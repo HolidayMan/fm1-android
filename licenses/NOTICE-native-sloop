@@ -1,9 +1,9 @@
-Native SLOOP 2.7.1 backend (local prototype)
+Native SLOOP 2.8 backend (local prototype)
 
 SLOOP / Felucca firmware: GPL-3.0-only. Copyright 2026 Leo Kuroshita
 (@kurogedelic), Hugelton Instruments; SLOOP by isod89 and contributors.
 Exact source: https://github.com/isod89/sloop-fm1
-Tag v2.7.1, commit 4ec1ac829fd2bdf2c571ea215fb3d62477d01220.
+Tag v2.8, commit b77bf55e3bf804665b8f5dffb5955bd8443311f0.
 
 Native firmware wrapper and per-instance LLVM state tooling derived from
 Virtual FM-1, GPL-3.0: https://github.com/jbschooley/Virtual-FM-1
@@ -31,8 +31,8 @@ https://github.com/charlesvestal/fm1-x0x commit 27f6fac7e07ce97b5de158b45aec99f5
 Whole upstream application, sequencer and real sound-engine source are compiled;
 its hardware platform is adapted to the serial native worker, physical flash and panel.
 
-Melodee 1.4.3, GPL-3.0-only, Kerem Kilic / Ellic Studio, after Felucca.
-https://github.com/keremimo/melodee commit ba9c812a603607012d68544b1acb6ccc8033eec5
+Melodee 1.4.5, GPL-3.0-only, Kerem Kilic / Ellic Studio, after Felucca.
+https://github.com/keremimo/melodee commit 398ada1e09d864c12f3b778a43e45c7c2a8031b8
 The included Casio CZ-1 and Sequential Prophet factory programs retain their
 respective owners' rights; upstream does not grant a redistribution license.
 External engine source and generated resources remain in the ignored local cache.
@@ -40,3 +40,6 @@ External engine source and generated resources remain in the ignored local cache
 Felucca/Melodee source wrappers retain Virtual FM-1 attribution and GPL-3.0.
 Complete upstream licensing notices are retained in Core/native/licenses/.
 Per-release generated header hashes and exact source pins: family.lock.json.
+
+SLOOP 2.8 NOTES editing credits Melodee by Kerem Kilic (keremimo), GPL-3.0.
+The upstream source retains this attribution in firmware/src/ui.c.

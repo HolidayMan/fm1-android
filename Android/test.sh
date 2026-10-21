@@ -20,6 +20,14 @@ if [[ -n "${FM1_EXCHANGE_FIXTURES:-}" ]]; then
  done
  EXCHANGE=true
 fi
+MIGRATION=false
+if [[ -n "${FM1_MIGRATION_FIXTURES:-}" ]]; then
+ mkdir -p "$OUT/assets/migration"
+ for name in kind-{2..9}.flash sloop-2.7.1.fm1backup sloop-2.7.1.fm1project dense-2.7.1.flash; do
+  cp "$FM1_MIGRATION_FIXTURES/$name" "$OUT/assets/migration/$name"
+ done
+ MIGRATION=true
+fi
 "$TOOLS/aapt2" link -A "$OUT/assets" -I "$SDK/platforms/android-35/android.jar" --manifest "$OUT/AndroidManifest.xml" -o "$OUT/base.apk"
 find Android/app/src/androidTest/kotlin -name '*.kt' > "$OUT/sources.txt"
 "$KOTLIN_HOME/bin/kotlinc" -jvm-target 1.8 -no-reflect -module-name fm1tests -Xfriend-paths="$PWD/Android/build/classes" -cp "$SDK/platforms/android-35/android.jar:$PWD/Android/build/classes" -d "$OUT/classes" @"$OUT/sources.txt"
@@ -32,7 +40,7 @@ cp "$OUT/base.apk" "$OUT/unsigned.apk"
 "$SDK/platform-tools/adb" shell input keyevent KEYCODE_WAKEUP
 "$SDK/platform-tools/adb" shell wm dismiss-keyguard
 "$SDK/platform-tools/adb" install -r "$OUT/tests.apk"
-"$SDK/platform-tools/adb" shell am instrument -w -e exchange "$EXCHANGE" org.fm1.android.tests/org.fm1.android.EngineInstrumentation | tee "$OUT/result.txt"
+"$SDK/platform-tools/adb" shell am instrument -w -e exchange "$EXCHANGE" -e captureBaseline "${FM1_CAPTURE_BASELINE:-false}" -e migration "$MIGRATION" -e uiOnly "${FM1_UI_ONLY:-false}" org.fm1.android.tests/org.fm1.android.EngineInstrumentation | tee "$OUT/result.txt"
 python3 - "$OUT/result.txt" <<'PYRESULT'
 import json,pathlib,re,sys
 text=pathlib.Path(sys.argv[1]).read_text();matches=list(re.finditer(r'\{\s*"platform"\s*:',text))

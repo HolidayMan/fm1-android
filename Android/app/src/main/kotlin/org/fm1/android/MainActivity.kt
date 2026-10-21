@@ -70,7 +70,7 @@ class MainActivity : Activity(), EngineController.Listener {
         toolbar.gravity = Gravity.CENTER_VERTICAL
         toolbar.setPadding(dp(8f), 0, dp(8f), 0)
         column.addView(toolbar, LinearLayout.LayoutParams(-1, dp(32f)))
-        firmware = chrome("SLOOP 2.7.1 ⌄") { library() }
+        firmware = chrome("SLOOP 2.8 ⌄") { library() }
         firmware.gravity = Gravity.LEFT or Gravity.CENTER_VERTICAL
         toolbar.addView(firmware, LinearLayout.LayoutParams(0, -1, 1f))
         transport =

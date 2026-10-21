@@ -14,6 +14,10 @@ import java.io.*
 import java.nio.file.Files
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 
 /** Serial native ownership, bounded prepared PCM, and durable private storage. */
@@ -28,6 +32,17 @@ class EngineController(context: Context) {
     @JvmField @Volatile var outputFrames = 0L
     @JvmField @Volatile var underflowFrames = 0L
     @JvmField @Volatile var peak = 0.0
+    @JvmField @Volatile var diagnostics = false
+    @JvmField @Volatile var checkpointCaptureMaxMicros = 0L
+    @JvmField @Volatile var checkpointWriteMaxMicros = 0L
+    @JvmField @Volatile var snapshotMaxMicros = 0L
+    @JvmField @Volatile var checkpointCount = 0L
+    @JvmField @Volatile var producerMaxGapMicros = 0L
+    @JvmField @Volatile var lastUnderflowProducerAgeMicros = 0L
+    @JvmField @Volatile var lastUnderflowOutputIntervalMicros = 0L
+    @JvmField @Volatile var pcmWaitCount = 0L
+    @JvmField @Volatile var pcmWaitMaxMicros = 0L
+    @Volatile private var lastTickNanos = 0L
 
     interface Listener {
         fun onFrame()
@@ -47,7 +62,7 @@ class EngineController(context: Context) {
     private val main = Handler(Looper.getMainLooper())
     private val workerThread = HandlerThread("FM1 native owner", Process.THREAD_PRIORITY_AUDIO)
     private val worker: Handler
-    private val ringLock = Any()
+    private val ringLock = java.lang.Object()
     private val ring = FloatArray(8192 * 2)
     private val renderBuffer = FloatArray(1024)
     private var read = 0
@@ -61,6 +76,33 @@ class EngineController(context: Context) {
     private var lastSave = 0L
     private val snapshotPixels = IntArray(57600)
     private val snapshotLeds = FloatArray(41)
+    private var pendingPixels = IntArray(57600)
+    private var pendingLeds = FloatArray(41)
+    private val framePending = AtomicBoolean(false)
+    private val deliverFrame = Runnable {
+        val previousPixels = pixels
+        val previousLeds = leds
+        pixels = pendingPixels
+        leds = pendingLeds
+        pendingPixels = previousPixels
+        pendingLeds = previousLeds
+        try {
+            frameListener?.onFrame()
+        } finally {
+            framePending.set(false)
+        }
+    }
+    private val storage =
+        Executors.newSingleThreadExecutor { task ->
+            Thread(
+                {
+                    Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+                    task.run()
+                },
+                "FM1 durable saves",
+            )
+        }
+    private var pendingStoreWrite: Future<*>? = null
     @Volatile private var exportThread: Thread? = null
     @JvmField val audioBufferFrames: Int
     private var masterValue = prefs.getInt("master", 716)
@@ -70,10 +112,20 @@ class EngineController(context: Context) {
         object : Runnable {
             override fun run() {
                 if (closed) return
+                if (diagnostics) {
+                    val now = SystemClock.elapsedRealtimeNanos()
+                    if (lastTickNanos != 0L)
+                        producerMaxGapMicros =
+                            maxOf(producerMaxGapMicros, (now - lastTickNanos) / 1000)
+                    lastTickNanos = now
+                }
                 try {
                     if (running()) {
-                        val need = synchronized(ringLock) { 1024 - available }
-                        if (need >= 512) {
+                        // Refill the same bounded target completely before optional UI/storage
+                        // work.
+                        var batches = 0
+                        while (batches < 2 && synchronized(ringLock) { 1024 - available } >= 512) {
+                            batches++
                             if (NativeEngine.render(machine, renderBuffer, 512) != 512)
                                 throw IOException(
                                     "The native instrument did not return complete audio."
@@ -88,6 +140,7 @@ class EngineController(context: Context) {
                                     renderBuffer[i]
                                 write = (write + 512) % 8192
                                 available += 512
+                                ringLock.notifyAll()
                             }
                             producedFrames += 512
                         }
@@ -97,7 +150,7 @@ class EngineController(context: Context) {
                             lastSnapshot = now
                         }
                         if (now - lastSave >= 10000) {
-                            checkpoint()
+                            checkpoint(waitForDisk = false)
                             lastSave = now
                         }
                     }
@@ -172,6 +225,7 @@ class EngineController(context: Context) {
             read = 0
             write = 0
             available = 0
+            ringLock.notifyAll()
         }
 
     private fun running() = ready && !paused && foreground && !closed
@@ -180,10 +234,33 @@ class EngineController(context: Context) {
         Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
         val output = FloatArray(1024)
         track.play()
+        var previousOutputNanos = 0L
         while (!closed) {
+            val iterationNanos = if (diagnostics) SystemClock.elapsedRealtimeNanos() else 0L
             var count = 0
-            val play = running()
+            var play = running()
             synchronized(ringLock) {
+                if (play && available < 512) {
+                    // AudioTrack may accept a burst of writes before its next mixer cycle.
+                    // Give the independent producer at most half a render quantum; inserting
+                    // silence immediately here creates avoidable gaps while OS PCM is queued.
+                    val started = SystemClock.elapsedRealtimeNanos()
+                    val deadline = started + 6_000_000L
+                    while (running() && available < 512) {
+                        val remaining = deadline - SystemClock.elapsedRealtimeNanos()
+                        if (remaining <= 0) break
+                        ringLock.wait(remaining / 1_000_000L, (remaining % 1_000_000L).toInt())
+                    }
+                    if (diagnostics) {
+                        pcmWaitCount++
+                        pcmWaitMaxMicros =
+                            maxOf(
+                                pcmWaitMaxMicros,
+                                (SystemClock.elapsedRealtimeNanos() - started) / 1000,
+                            )
+                    }
+                }
+                play = running()
                 if (play) {
                     count = minOf(512, available)
                     for (i in 0 until count * 2) output[i] = ring[(read * 2 + i) % ring.size]
@@ -194,9 +271,17 @@ class EngineController(context: Context) {
             output.fill(0f, count * 2, output.size)
             if (muted) output.fill(0f)
             if (play) {
+                if (diagnostics && count < 512) {
+                    lastUnderflowProducerAgeMicros =
+                        maxOf(0L, (SystemClock.elapsedRealtimeNanos() - lastTickNanos) / 1000)
+                    if (previousOutputNanos != 0L)
+                        lastUnderflowOutputIntervalMicros =
+                            (iterationNanos - previousOutputNanos) / 1000
+                }
                 underflowFrames += 512 - count
                 outputFrames += count
             }
+            previousOutputNanos = iterationNanos
             val sent = track.write(output, 0, output.size, AudioTrack.WRITE_BLOCKING)
             if (sent < 0) {
                 Log.e("FM1", "AudioTrack write $sent")
@@ -213,26 +298,47 @@ class EngineController(context: Context) {
     private fun saveFile(kind: Int) =
         File(directory, "$kind${if (kind == 6) ".preview.flash" else ".flash"}")
 
+    /** Preserve the previous firmware's exact raw store before the first new-engine restore. */
+    private fun preservePreUpdateSave(kind: Int, save: File) {
+        if (
+            kind !in intArrayOf(2, 5, 6, 7) ||
+                prefs.getString("storageRevision-$kind", null) == STORAGE_REVISION ||
+                !save.isFile
+        )
+            return
+        val backups = File(directory, "Before-0.3.0")
+        if (!backups.isDirectory && !backups.mkdirs())
+            throw IOException("Could not preserve the previous instrument save. It has been kept.")
+        val backup = File(backups, save.name)
+        if (!backup.exists()) atomicWrite(backup, Files.readAllBytes(save.toPath()))
+    }
+
     private fun load(kind: Int) {
         var candidate = 0L
         val wasReady = ready
         ready = false
         clearRing()
         try {
-            candidate = NativeEngine.create(packageBytes(kind), kind)
-            val save = saveFile(kind)
-            if (save.isFile && !NativeEngine.restore(candidate, Files.readAllBytes(save.toPath())))
-                throw IOException("Saved instrument data could not be restored. It has been kept.")
-            NativeEngine.volume(candidate, masterValue)
+            awaitStoreWrites()
             if (machine != 0L) {
                 NativeEngine.release(machine)
                 checkpoint()
-                NativeEngine.destroy(machine)
             }
+            val save = saveFile(kind)
+            preservePreUpdateSave(kind, save)
+            candidate = NativeEngine.create(packageBytes(kind), kind)
+            if (save.isFile && !NativeEngine.restore(candidate, Files.readAllBytes(save.toPath())))
+                throw IOException("Saved instrument data could not be restored. It has been kept.")
+            NativeEngine.volume(candidate, masterValue)
+            if (machine != 0L) NativeEngine.destroy(machine)
             machine = candidate
             candidate = 0
             selectedKind = kind
-            prefs.edit().putInt("instrument", kind).apply()
+            prefs
+                .edit()
+                .putInt("instrument", kind)
+                .putString("storageRevision-$kind", STORAGE_REVISION)
+                .apply()
             clearRing()
             ready = true
             peak = 0.0
@@ -246,16 +352,77 @@ class EngineController(context: Context) {
     }
 
     private fun publishFrame() {
-        if (machine == 0L) return
+        val started = if (diagnostics) SystemClock.elapsedRealtimeNanos() else 0L
         NativeEngine.snapshot(machine, snapshotPixels, snapshotLeds)
-        if (pixels.contentEquals(snapshotPixels) && leds.contentEquals(snapshotLeds)) return
-        if (!pixels.contentEquals(snapshotPixels)) pixels = snapshotPixels.clone()
-        leds = snapshotLeds.clone()
-        main.post { frameListener?.onFrame() }
+        val changed = !pixels.contentEquals(snapshotPixels) || !leds.contentEquals(snapshotLeds)
+        if (changed && framePending.compareAndSet(false, true)) {
+            // The pending arrays are reused only after the main thread finishes its synchronous
+            // copy.
+            snapshotPixels.copyInto(pendingPixels)
+            snapshotLeds.copyInto(pendingLeds)
+            main.post(deliverFrame)
+        }
+        if (diagnostics)
+            snapshotMaxMicros =
+                maxOf(snapshotMaxMicros, (SystemClock.elapsedRealtimeNanos() - started) / 1000)
     }
 
-    private fun checkpoint() {
-        if (machine != 0L) atomicWrite(saveFile(selectedKind), NativeEngine.flash(machine))
+    private fun awaitStoreWrites() {
+        val pending = pendingStoreWrite ?: return
+        try {
+            pending.get()
+        } catch (error: InterruptedException) {
+            Thread.currentThread().interrupt()
+            throw IOException("Interrupted while saving instrument data.", error)
+        } catch (error: ExecutionException) {
+            throw IOException("Instrument data could not be saved.", error.cause)
+        } finally {
+            if (pendingStoreWrite === pending) pendingStoreWrite = null
+        }
+    }
+
+    /**
+     * Every raw-store write shares one FIFO, including transactional project/sample replacement.
+     */
+    private fun writeStore(file: File, bytes: ByteArray, waitForDisk: Boolean) {
+        pendingStoreWrite =
+            storage.submit(
+                Runnable {
+                    val started = if (diagnostics) SystemClock.elapsedRealtimeNanos() else 0L
+                    try {
+                        atomicWrite(file, bytes)
+                    } catch (error: Exception) {
+                        if (!waitForDisk) worker.post { failure(error) }
+                        throw error
+                    } finally {
+                        if (diagnostics)
+                            checkpointWriteMaxMicros =
+                                maxOf(
+                                    checkpointWriteMaxMicros,
+                                    (SystemClock.elapsedRealtimeNanos() - started) / 1000,
+                                )
+                    }
+                }
+            )
+        if (waitForDisk) awaitStoreWrites()
+    }
+
+    private fun checkpoint(waitForDisk: Boolean = true) {
+        if (machine == 0L) return
+        // Never accumulate an unbounded queue if storage is slow; the next interval captures fresh
+        // state.
+        if (!waitForDisk && pendingStoreWrite?.isDone == false) return
+        val started = if (diagnostics) SystemClock.elapsedRealtimeNanos() else 0L
+        val bytes = NativeEngine.flash(machine)
+        if (diagnostics) {
+            checkpointCaptureMaxMicros =
+                maxOf(
+                    checkpointCaptureMaxMicros,
+                    (SystemClock.elapsedRealtimeNanos() - started) / 1000,
+                )
+            checkpointCount++
+        }
+        writeStore(saveFile(selectedKind), bytes, waitForDisk)
     }
 
     fun selectEngine(kind: Int) {
@@ -390,7 +557,7 @@ class EngineController(context: Context) {
                 File(projects, "Recovery-${System.currentTimeMillis()}.fm1backup"),
                 current.envelope("Recovery before opening", true),
             )
-            atomicWrite(saveFile(2), NativeEngine.flash(candidate))
+            writeStore(saveFile(2), NativeEngine.flash(candidate), waitForDisk = true)
             NativeEngine.release(machine)
             NativeEngine.destroy(machine)
             machine = candidate
@@ -425,7 +592,7 @@ class EngineController(context: Context) {
                         File(projects, "Recovery-${System.currentTimeMillis()}.fm1backup"),
                         current.envelope("Before sample import", true),
                     )
-                    atomicWrite(saveFile(2), NativeEngine.flash(candidate))
+                    writeStore(saveFile(2), NativeEngine.flash(candidate), waitForDisk = true)
                     NativeEngine.destroy(machine)
                     machine = candidate
                     candidate = 0
@@ -482,7 +649,7 @@ class EngineController(context: Context) {
 
     private fun requireSloop() {
         if (machine == 0L || selectedKind != 2)
-            throw IOException("Project files require SLOOP 2.7.1.")
+            throw IOException("Project files require SLOOP 2.8.")
     }
 
     private fun projectFile(name: String): File =
@@ -505,20 +672,22 @@ class EngineController(context: Context) {
                 machine = 0
             }
             closed = true
+            storage.shutdown()
             workerThread.quitSafely()
         }
     }
 
     companion object {
+        private const val STORAGE_REVISION = "0.3.0"
         @JvmField
         val ENGINE_NAMES =
             arrayOf(
-                "SLOOP 2.7.1",
+                "SLOOP 2.8",
                 "Felucca 1.6.1",
                 "X0X 1.1.0",
-                "Melodee 1.4.3",
-                "FM1 Open V13 Preview",
-                "Skiff 1.3.2",
+                "Melodee 1.4.5",
+                "FM1 Open V14 Preview",
+                "Skiff 1.4",
                 "FoMni 0.4",
                 "Jangada 1.0.1",
             )

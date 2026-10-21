@@ -156,7 +156,7 @@ mod tests {
     }
     unsafe fn create() -> *mut Instrument {
         let source = std::path::PathBuf::from(std::env::var_os("FM1_NATIVE_SLOOP").unwrap());
-        let package = std::fs::read(source.join("docs/firmware/sloop-2.7.1.fwsc")).unwrap();
+        let package = std::fs::read(source.join("docs/firmware/sloop-2.8.fwsc")).unwrap();
         let mut error = [0u8; 512];
         let m = instrument_create(package.as_ptr(), package.len(), error.as_mut_ptr(), 512);
         assert!(!m.is_null(), "{}", String::from_utf8_lossy(&error));

@@ -35,7 +35,7 @@ def main():
     native=out/'native';native.mkdir(exist_ok=True);shutil.copy2(HERE/'skiff_core.c',native/'skiff_core.c')
     tc.adapt_wrapper(native/'skiff_core.c')
     clang=tc.cc
-    flags=['-target',triple,*tc.flags,'-std=gnu11','-O2','-w','-fwrapv','-fno-strict-aliasing','-ffp-contract=off','-DFELUCCA_VERSION="v1.3.2"','-I'+str(source/'build/gen'),'-I'+str(upstream/'firmware/src')]
+    flags=['-target',triple,*tc.flags,'-std=gnu11','-O2','-w','-fwrapv','-fno-strict-aliasing','-ffp-contract=off','-DFELUCCA_VERSION="v1.4"','-I'+str(source/'build/gen'),'-I'+str(upstream/'firmware/src')]
     run(clang,*flags,'-S','-emit-llvm','-Xclang','-disable-llvm-passes',native/'skiff_core.c','-o',out/'core.ll')
     text=(out/'core.ll').read_text()
     names=set(re.findall(r'^define .*?@([\w.$]+)\(',text,re.M))|set(re.findall(r'^@([\w.$]+) = (?!external\b)',text,re.M))
@@ -47,7 +47,7 @@ def main():
     archive=out/'libfm1_native_skiff.a';run(*tc.ar,'crs',archive,out/'skiff.o')
     receipt={'schema_version':1,'id':'skiff','source':LOCK['source'],'commit':LOCK['commit'],'package':LOCK['package'],'target':triple,'flash_bytes':LOCK['flash_bytes'],'state_alignment':LOCK['state_alignment'],'archive_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),'generated_headers_sha256':LOCK['generated_headers_sha256'],'adapter_sha256':{name:hashlib.sha256((HERE/name).read_bytes()).hexdigest() for name in ['skiff_core.c','skiff_build.py','skiff_prepare.py','skiff.lock.json','fel_state.py','target_config.py']}}
     (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
-    print('Built pinned Skiff1.3.2 actual application/ISR/DSP native host; no hardware parity acceptance claimed.')
+    print('Built pinned Skiff1.4 actual application/ISR/DSP native host; no hardware parity acceptance claimed.')
 if __name__=='__main__':
     try:main()
     except (ValueError,subprocess.CalledProcessError) as error:sys.exit(str(error))
